@@ -28,8 +28,8 @@ const parseStrapiList = async (response: Response) => {
                 thumbnail: thumbnail?.formats?.thumbnail?.url
                     ? `http://localhost:1337${thumbnail.formats.thumbnail.url}`
                     : thumbnail?.url
-                    ? `http://localhost:1337${thumbnail.url}`
-                    : null,
+                        ? `http://localhost:1337${thumbnail.url}`
+                        : null,
             };
         }),
         total: json.meta?.pagination?.total || items.length,
@@ -46,8 +46,8 @@ const parseStrapiOne = async (response: Response) => {
     const item = json.data;
 
     const srcUrl = Array.isArray(item.src) && item.src.length > 0 && item.src[0].url
-    ? `http://localhost:1337${item.src[0].url}`
-    : null
+        ? `http://localhost:1337${item.src[0].url}`
+        : null
 
     return {
         data: {
@@ -58,8 +58,8 @@ const parseStrapiOne = async (response: Response) => {
             thumbnail: item.thumbnail?.formats?.thumbnail?.url
                 ? `http://localhost:1337${item.thumbnail.formats.thumbnail.url}`
                 : item.thumbnail?.url
-                ? `http://localhost:1337${item.thumbnail.url}`
-                : null,
+                    ? `http://localhost:1337${item.thumbnail.url}`
+                    : null,
         },
     };
 };
@@ -107,23 +107,71 @@ const dataProvider: DataProvider = {
     },
 
     create: async (resource, params) => {
+    const data = { ...params.data };
 
-        const response = await fetch(
-            `${STRAPI_API_URL}/${resource}`,
-            {
-                method: 'POST',
-                body: JSON.stringify({ data: params.data }),
-                headers: authHeader(),
-            }
-        );
+    const formData = new FormData();
+    const files: File[] = [];
 
-        if (!response.ok) {
-            throw new Error(`Error creating: ${response.statusText}`);
+    // Upload thumbnail
+    if (data.thumbnail instanceof File) {
+        formData.append('files', data.thumbnail);
+        files.push(data.thumbnail);
+        delete data.thumbnail;
+    }
+
+    // Upload src
+    if (data.src instanceof File) {
+        formData.append('files', data.src);
+        files.push(data.src);
+        delete data.src;
+    }
+
+    // Upload files trước
+    let uploadedFiles: any[] = [];
+    if (files.length > 0) {
+        const uploadRes = await fetch(`${STRAPI_API_URL}/upload`, {
+            method: 'POST',
+            headers: {
+                Authorization: authHeader().Authorization || '',
+            },
+            body: formData,
+        });
+
+        if (!uploadRes.ok) {
+            throw new Error(`Upload failed: ${uploadRes.statusText}`);
         }
 
-        return parseStrapiOne(response);
+        uploadedFiles = await uploadRes.json();
+    }
 
-    },
+    for (const f of uploadedFiles) {
+        if (f.mime.startsWith('image/')) {
+            data.thumbnail = f.id;
+        } else if (f.mime.startsWith('video/')) {
+            data.src = [f.id]; 
+        }
+    }
+
+
+    const response = await fetch(`${STRAPI_API_URL}/${resource}`, {
+        method: 'POST',
+        headers: {
+            ...authHeader(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ data }),
+    });
+
+    if (!response.ok) {
+        const err = await response.json();
+        console.error('Strapi error response:', err);
+        throw new Error(`Error creating: ${response.statusText}`);
+    }
+
+    return parseStrapiOne(response);
+},
+
+
 
     update: async (resource, params) => {
         const { id: documentId } = params.data;
@@ -136,6 +184,7 @@ const dataProvider: DataProvider = {
             "city",
             "country",
             "zipCode",
+            
             // thêm nếu có custom field khác cần cập nhật
         ];
 

@@ -107,29 +107,30 @@ export default function VideoCreatePage() {
 
 
     const handleSubmit = () => {
-        if (!title || !videoFile || !videoUrl ) {
-            notify('Vui lòng điền đầy đủ', { type: 'warning' });
-            return;
-        }
+    if (!title || !videoFile) {
+        notify('Vui lòng điền đầy đủ', { type: 'warning' });
+        return;
+    }
 
-        const newVideo = {
-            title,
-            src: videoUrl,
-            thumbnail: thumbUrl,
-            trimStart: region.start,
-            trimEnd: region.end,
-        };
-
-        create('videos', { data: newVideo }, {
-            onSuccess: () => {
-                notify('Đã thêm video', { type: 'success' });
-                redirect('/videos');
-            },
-            onError: (error: any) => {
-                notify(`Lỗi: ${error.message}`, { type: 'error' });
-            }
-        });
+    const newVideo = {
+        title,
+        src: videoFile,       // Truyền File, không phải URL
+        thumbnail: thumbFile, // Truyền File, không phải URL
+        trimStart: region.start,
+        trimEnd: region.end,
     };
+
+    create('videos', { data: newVideo }, {
+        onSuccess: () => {
+            notify('Tạo video thành công!', { type: 'success' });
+            redirect('/videos');
+        },
+        onError: (error: any) => {
+            notify(`Lỗi khi tạo video: ${error.message}`, { type: 'error' });
+        },
+    });
+};
+
 
 
     return (
