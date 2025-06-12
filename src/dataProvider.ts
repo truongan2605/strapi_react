@@ -18,14 +18,24 @@ const parseStrapiList = async (response: Response) => {
     const items = Array.isArray(json.data) ? json.data : [];
 
     return {
-        data: items.map((item: any) => ({
-            ...item,
-            id: item.documentId,
-            numberId: item.id,
-        })),
+        data: items.map((item: any) => {
+            const { id, documentId, thumbnail } = item;
+
+            return {
+                ...item,
+                id: documentId || id,
+                numberId: id,
+                thumbnail: thumbnail?.formats?.thumbnail?.url
+                    ? `http://localhost:1337${thumbnail.formats.thumbnail.url}`
+                    : thumbnail?.url
+                    ? `http://localhost:1337${thumbnail.url}`
+                    : null,
+            };
+        }),
         total: json.meta?.pagination?.total || items.length,
     };
 };
+
 
 const parseStrapiOne = async (response: Response) => {
     const json = await response.json();
@@ -33,11 +43,23 @@ const parseStrapiOne = async (response: Response) => {
         throw new Error('Response must contain data with a documentId.');
     }
 
+    const item = json.data;
+
+    const srcUrl = Array.isArray(item.src) && item.src.length > 0 && item.src[0].url
+    ? `http://localhost:1337${item.src[0].url}`
+    : null
+
     return {
         data: {
-            ...json.data,
-            id: json.data.documentId,
-            numberId: json.data.id,
+            ...item,
+            id: item.documentId,
+            numberId: item.id,
+            src: srcUrl,
+            thumbnail: item.thumbnail?.formats?.thumbnail?.url
+                ? `http://localhost:1337${item.thumbnail.formats.thumbnail.url}`
+                : item.thumbnail?.url
+                ? `http://localhost:1337${item.thumbnail.url}`
+                : null,
         },
     };
 };
@@ -54,8 +76,11 @@ const dataProvider: DataProvider = {
         query.set('pagination[pageSize]', String(perPage));
         query.set('sort', `${field}:${order}`);
 
+        const isVideo = resource === 'videos';
+        const populateParam = isVideo ? '&populate=*' : '';
+
         const response = await fetch(
-            `${STRAPI_API_URL}/${resource}?${query.toString()}`,
+            `${STRAPI_API_URL}/${resource}?${query.toString()}${populateParam}`,
             { headers: authHeader() }
         );
 
@@ -68,8 +93,9 @@ const dataProvider: DataProvider = {
 
 
     getOne: async (resource, params) => {
+        const isVideo = resource === 'videos';
         const response = await fetch(
-            `${STRAPI_API_URL}/${resource}/${params.id}`,
+            `${STRAPI_API_URL}/${resource}/${params.id}${isVideo ? '?populate=*' : ''}`,
             { headers: authHeader() }
         );
 

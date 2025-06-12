@@ -4,8 +4,7 @@ import { Typography, Box } from '@mui/material';
 
 export default function VideoDetailPage() {
   const { id } = useParams();
-  const numericId = id ? parseInt(id, 10) : 0;
-  const { data, isLoading, error } = useGetOne('videos', { id: numericId });
+  const { data, isLoading, error } = useGetOne('videos', { id });
 
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error: {error.message}</p>;
@@ -41,7 +40,7 @@ export default function VideoDetailPage() {
           if (video.currentTime < trimStart) {
             video.currentTime = trimStart;
           }
-          
+
         }}
       />
     </Box>
