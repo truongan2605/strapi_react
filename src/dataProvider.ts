@@ -45,16 +45,15 @@ const parseStrapiOne = async (response: Response) => {
 
     const item = json.data;
 
-    const srcUrl = Array.isArray(item.src) && item.src.length > 0 && item.src[0].url
-        ? `http://localhost:1337${item.src[0].url}`
-        : null
+    const srcField = Array.isArray(item.src) && item.src.length > 0 ? item.src[0] : null;
 
     return {
         data: {
             ...item,
             id: item.documentId,
             numberId: item.id,
-            src: srcUrl,
+            src: srcField ? `http://localhost:1337${srcField.url}` : null, //  src là URL video
+            srcId: srcField?.id, //  dùng cho Edit nếu cần
             thumbnail: item.thumbnail?.formats?.thumbnail?.url
                 ? `http://localhost:1337${item.thumbnail.formats.thumbnail.url}`
                 : item.thumbnail?.url
@@ -63,6 +62,8 @@ const parseStrapiOne = async (response: Response) => {
         },
     };
 };
+
+
 
 const dataProvider: DataProvider = {
     getList: async (resource, params) => {
@@ -107,98 +108,165 @@ const dataProvider: DataProvider = {
     },
 
     create: async (resource, params) => {
-    const data = { ...params.data };
+        const data = { ...params.data };
 
-    const formData = new FormData();
-    const files: File[] = [];
+        const formData = new FormData();
+        const files: File[] = [];
 
-    // Upload thumbnail
-    if (data.thumbnail instanceof File) {
-        formData.append('files', data.thumbnail);
-        files.push(data.thumbnail);
-        delete data.thumbnail;
-    }
+        // Upload thumbnail
+        if (data.thumbnail instanceof File) {
+            formData.append('files', data.thumbnail);
+            files.push(data.thumbnail);
+            delete data.thumbnail;
+        }
 
-    // Upload src
-    if (data.src instanceof File) {
-        formData.append('files', data.src);
-        files.push(data.src);
-        delete data.src;
-    }
+        // Upload src
+        if (data.src instanceof File) {
+            formData.append('files', data.src);
+            files.push(data.src);
+            delete data.src;
+        }
 
-    // Upload files trước
-    let uploadedFiles: any[] = [];
-    if (files.length > 0) {
-        const uploadRes = await fetch(`${STRAPI_API_URL}/upload`, {
+        // Upload files trước
+        let uploadedFiles: any[] = [];
+        if (files.length > 0) {
+            const uploadRes = await fetch(`${STRAPI_API_URL}/upload`, {
+                method: 'POST',
+                headers: {
+                    Authorization: authHeader().Authorization || '',
+                },
+                body: formData,
+            });
+
+            if (!uploadRes.ok) {
+                throw new Error(`Upload failed: ${uploadRes.statusText}`);
+            }
+
+            uploadedFiles = await uploadRes.json();
+        }
+
+        for (const f of uploadedFiles) {
+            if (f.mime.startsWith('image/')) {
+                data.thumbnail = f.id;
+            } else if (f.mime.startsWith('video/')) {
+                data.src = [f.id];
+            }
+        }
+
+
+        const response = await fetch(`${STRAPI_API_URL}/${resource}`, {
             method: 'POST',
             headers: {
-                Authorization: authHeader().Authorization || '',
+                ...authHeader(),
+                'Content-Type': 'application/json',
             },
-            body: formData,
+            body: JSON.stringify({ data }),
         });
 
-        if (!uploadRes.ok) {
-            throw new Error(`Upload failed: ${uploadRes.statusText}`);
+        if (!response.ok) {
+            const err = await response.json();
+            console.error('Strapi error response:', err);
+            throw new Error(`Error creating: ${response.statusText}`);
         }
 
-        uploadedFiles = await uploadRes.json();
-    }
-
-    for (const f of uploadedFiles) {
-        if (f.mime.startsWith('image/')) {
-            data.thumbnail = f.id;
-        } else if (f.mime.startsWith('video/')) {
-            data.src = [f.id]; 
-        }
-    }
-
-
-    const response = await fetch(`${STRAPI_API_URL}/${resource}`, {
-        method: 'POST',
-        headers: {
-            ...authHeader(),
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data }),
-    });
-
-    if (!response.ok) {
-        const err = await response.json();
-        console.error('Strapi error response:', err);
-        throw new Error(`Error creating: ${response.statusText}`);
-    }
-
-    return parseStrapiOne(response);
-},
+        return parseStrapiOne(response);
+    },
 
 
 
     update: async (resource, params) => {
-        const { id: documentId } = params.data;
+        const documentId = params.id;
 
-        // Danh sách các field cho phép cập nhật
-        const allowedFields = [
-            "name",
-            "company",
-            "avatar",
-            "city",
-            "country",
-            "zipCode",
-            
-            // thêm nếu có custom field khác cần cập nhật
-        ];
+        // Nếu là videos thì xử lý riêng
+        if (resource === 'videos') {
+            const allowedFields = [
+                "name", "description", "trimStart", "trimEnd", "thumbnail", "src"
+            ];
 
-        // Tạo object safeData chỉ chứa field hợp lệ
-        const safeData = allowedFields.reduce((acc, key) => {
-            if (key in params.data) {
-                acc[key] = params.data[key];
+
+            const safeData = allowedFields.reduce((acc, key) => {
+                if (key in params.data) acc[key] = params.data[key];
+                return acc;
+            }, {} as Record<string, any>);
+
+            // upload nếu cần
+            const formData = new FormData();
+            const files: File[] = [];
+
+            if (params.data.thumbnail instanceof File) {
+                formData.append('files', params.data.thumbnail);
+                files.push(params.data.thumbnail);
             }
-            return acc;
-        }, {} as Record<string, any>);
+            if (params.data.src instanceof File) {
+                formData.append('files', params.data.src);
+                files.push(params.data.src);
+            }
+
+            if (files.length > 0) {
+                const uploadRes = await fetch(`${STRAPI_API_URL}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: authHeader().Authorization || '',
+                    },
+                    body: formData,
+                });
+
+                if (!uploadRes.ok) {
+                    throw new Error(`Upload failed: ${uploadRes.statusText}`);
+                }
+
+                const uploadedFiles = await uploadRes.json();
+                for (const f of uploadedFiles) {
+                    if (f.mime.startsWith('image/')) {
+                        safeData.thumbnail = f.id;
+                    } else if (f.mime.startsWith('video/')) {
+                        safeData.src = [f.id];
+                    }
+                }
+            }
+
+            const response = await fetch(`${STRAPI_API_URL}/${resource}/${documentId}`, {
+                method: 'PUT',
+                headers: {
+                    ...authHeader(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ data: safeData }),
+            });
+
+            const json = await response.json();
+
+            if (!response.ok || !json.data) {
+                console.error('Update failed:', json?.error || json);
+                throw new Error(
+                    json?.error?.message || 'Update failed: Invalid response from server'
+                );
+            }
+
+            return {
+                data: {
+                    ...json.data,
+                    id: json.data.documentId || json.data.id,
+                    numberId: json.data.id,
+                },
+            };
+        }
+
+        // Nếu không phải videos thì loại bỏ id và documentId khỏi data
+        // Nếu không phải videos thì loại bỏ những field không hợp lệ
+        const forbiddenFields = ['id', 'documentId', 'createdAt', 'updatedAt', 'publishedAt', 'numberId', 'src', 'srcUrl', 'thumbnail'];
+
+        const safeData = Object.fromEntries(
+            Object.entries(params.data).filter(([key]) => !forbiddenFields.includes(key))
+        );
+
 
         const response = await fetch(`${STRAPI_API_URL}/${resource}/${documentId}`, {
             method: 'PUT',
-            headers: authHeader(),
+            headers: {
+                ...authHeader(),
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({ data: safeData }),
         });
 
@@ -214,10 +282,11 @@ const dataProvider: DataProvider = {
         return {
             data: {
                 ...json.data,
-                id: json.data.id, // không dùng json.data.documentId nữa, Strapi trả về đúng là .id
+                id: json.data.documentId || json.data.id,
             },
         };
     },
+
 
 
 

@@ -14,13 +14,14 @@ import RegionsPlugin from 'wavesurfer.js/plugins/regions';
 
 export default function VideoEditPage() {
   const { id } = useParams();
-  const numericId = id ? parseInt(id, 10) : 0;
+  const documentId = id ?? '';
 
   const notify = useNotify();
   const redirect = useRedirect();
   const navigate = useNavigate();
 
-  const { data, isLoading, error } = useGetOne('videos', { id: numericId });
+  const { data, isLoading, error } = useGetOne('videos', { id: documentId });
+  console.log(data);
   const [update] = useUpdate();
 
   const [region, setRegion] = useState({ start: 0, end: 0 });
@@ -31,58 +32,24 @@ export default function VideoEditPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (!data || !data.src || !waveRef.current || !videoRef.current) return;
-
-    const regionsPlugin = RegionsPlugin.create();
-    const ws = WaveSurfer.create({
-      container: waveRef.current,
-      waveColor: '#ddd',
-      progressColor: '#888',
-      height: 80,
-      backend: 'MediaElement',
-      media: videoRef.current,
-      plugins: [regionsPlugin],
-    });
-
-    wsRef.current = ws;
-
-    ws.on('ready', () => {
-      const dur = ws.getDuration();
-      setDuration(dur);
-      const start = data.trimStart || 0;
-      const end = data.trimEnd !== undefined && data.trimEnd !== 0 ? data.trimEnd : dur;
-
-
-      setRegion({ start, end });
-
-      regionsPlugin.addRegion({
-        start,
-        end,
-        color: 'rgba(0, 123, 255, 0.1)',
-        drag: false,
-        resize: false,
-      });
-    });
-
-    (ws as any).on('region-update-end', (r: any) => {
-      setRegion({ start: r.start, end: r.end });
-      if (videoRef.current) {
-        videoRef.current.currentTime = r.start;
-        videoRef.current.play();
-      }
-    });
-
     return () => {
-      ws.destroy();
+      wsRef.current?.destroy();
     };
-  }, [data]);
+  }, []);
 
   const handleSliderChange = (_: any, v: number | number[]) => {
     const [start, end] = v as number[];
+
+    if (start == null || end == null) {
+      return
+    }
+
     setRegion({ start, end });
 
     if (videoRef.current) {
       videoRef.current.currentTime = start;
+
+      console.log(videoRef)
       videoRef.current.play();
     }
 
@@ -96,10 +63,16 @@ export default function VideoEditPage() {
   };
 
   const handleSave = () => {
+    console.log('Trim start:', region.start, 'Trim end:', region.end);
+
     update(
       'videos',
-      { id: numericId, data: { trimStart: region.start, trimEnd: region.end } },
-      { 
+      {
+        id: documentId,
+        data: { trimStart: region.start, trimEnd: region.end },
+        previousData: data,
+      },
+      {
         onSuccess: () => {
           notify('Đã cập nhật video', { type: 'success' });
           redirect('/videos');
@@ -110,6 +83,8 @@ export default function VideoEditPage() {
       }
     );
   };
+
+  console.log('Trim start:', region.start, 'Trim end:', region.end);
 
   if (isLoading) return <Typography>Đang tải...</Typography>;
   if (error) return <Typography>Lỗi: {error.message}</Typography>;
@@ -126,7 +101,49 @@ export default function VideoEditPage() {
         controls
         ref={videoRef}
         style={{ width: '100%', marginBottom: 16 }}
+        onLoadedMetadata={() => {
+          if (!videoRef.current || !waveRef.current) return;
+
+          const regionsPlugin = RegionsPlugin.create();
+          const ws = WaveSurfer.create({
+            container: waveRef.current,
+            waveColor: '#ddd',
+            progressColor: '#888',
+            height: 80,
+            backend: 'MediaElement',
+            media: videoRef.current,
+            plugins: [regionsPlugin],
+          });
+
+          wsRef.current = ws;
+
+          ws.on('ready', () => {
+            const dur = ws.getDuration();
+            setDuration(dur);
+            const start = data.trimStart || 0;
+            const end = data.trimEnd !== undefined && data.trimEnd !== 0 ? data.trimEnd : dur;
+
+            setRegion({ start, end });
+
+            regionsPlugin.addRegion({
+              start,
+              end,
+              color: 'rgba(0, 123, 255, 0.1)',
+              drag: false,
+              resize: false,
+            });
+          });
+
+          (ws as any).on('region-update-end', (r: any) => {
+            setRegion({ start: r.start, end: r.end });
+            if (videoRef.current) {
+              videoRef.current.currentTime = r.start;
+              videoRef.current.play();
+            }
+          });
+        }}
       />
+
 
       <Typography>Trim:</Typography>
       <Slider

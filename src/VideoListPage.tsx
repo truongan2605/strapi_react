@@ -5,6 +5,7 @@ import {
     useRedirect,
     useGetList,
     Button,
+    usePermissions,
 } from 'react-admin';
 import {
     Card,
@@ -20,9 +21,14 @@ export default function VideoListPage() {
     const navigate = useNavigate();
     const { data, isLoading, error } = useGetList('videos', {
         pagination: { page: 1, perPage: 10 },
-        sort: { field: 'id', order: 'ASC' },
+        sort: { field: 'id', order: 'DESC' },
         filter: {},
     });
+    const { permissions } = usePermissions();
+    const canEdit = permissions?.['my-users']?.edit;
+    const canDelete = permissions?.['my-users']?.delete;
+    const canCreate = permissions?.['my-users']?.create;
+
 
     const notify = useNotify();
     const redirect = useRedirect();
@@ -33,15 +39,15 @@ export default function VideoListPage() {
     return (
         <Box p={2}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h5" gutterBottom>
-                Video List
-            </Typography>
-            <Button
-                variant="contained"
-                onClick={() => navigate('/videos/create')}
-            >
-                Add Video
-            </Button>
+                <Typography variant="h5" gutterBottom>
+                    Video List
+                </Typography>
+                {canCreate && <Button
+                    variant="contained"
+                    onClick={() => navigate('/videos/create')}
+                >
+                    Add Video
+                </Button>}
             </Box>
             <Grid container spacing={3}>
                 {data?.map((video: any) => (
@@ -62,7 +68,7 @@ export default function VideoListPage() {
                                 </CardContent>
                             </Link>
                             <Box display="flex" justifyContent="flex-end" p={1}>
-                                <Button
+                                {canEdit && <Button
                                     component={Link}
                                     to={`/videos/${video.id}/edit`}
                                     variant="outlined"
@@ -71,8 +77,8 @@ export default function VideoListPage() {
                                 // sx={{ ml: 5 }}
                                 >
                                     Edit Video
-                                </Button>
-                                <DeleteWithConfirmButton
+                                </Button>}
+                                {canDelete && <DeleteWithConfirmButton
                                     resource="videos"
                                     record={video}
                                     confirmTitle="Xác nhận xoá"
@@ -86,7 +92,7 @@ export default function VideoListPage() {
                                             notify('Lỗi khi xoá video', { type: 'error' });
                                         },
                                     }}
-                                />
+                                />}
                             </Box>
                         </Card>
                     </Grid>
