@@ -141,6 +141,7 @@ const UserKindredInfo = () => {
                                 '& .RaButton-label': {
                                     textTransform: 'none',
                                 },
+
                             }}
                         />
                     )}
@@ -157,8 +158,10 @@ const UserKindredInfo = () => {
                                 textTransform: 'none',
                                 minWidth: '120px',
                                 '&:hover': {
-                                    backgroundColor: '#2e7d32',
+                                    backgroundColor: '#2B9FE7',
                                 },
+                                backgroundColor:'#2B9FE7'
+
                             }}
                         >
                             Chỉnh sửa
@@ -174,7 +177,13 @@ const UserKindredInfo = () => {
 };
 
 const ProductListForUser = () => {
-    const { data, isLoading, error } = useGetMany('products', { ids: ['2', '4'] });
+    const { record } = useShowContext();
+
+    if (!record) return <CircularProgress />;
+
+    const productIds = (record.products || []).map((p: any) => p.documentId); 
+
+    const { data, isLoading, error } = useGetMany('products', { ids: productIds });
 
     if (isLoading) return <CircularProgress />;
     if (error) return <Alert severity="error">Lỗi khi tải sản phẩm</Alert>;
@@ -183,11 +192,11 @@ const ProductListForUser = () => {
     return (
         <Grid container spacing={2}>
             {data.map((product) => (
-                <Grid size={{ xs: 12, md: 6 }} key={product.id}>
+                <Grid size={{xs:12,md:6}} key={product.id}> 
                     <Card variant="outlined">
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
-                                Sản phẩm #{product.id}: {product.name}
+                                Sản phẩm #{product.numberId}: {product.name}
                             </Typography>
                             <Typography variant="body2">
                                 <strong>Loại:</strong> {product.product}
@@ -215,11 +224,7 @@ const UserShow = () => (
             <Tab label="Sản phẩm cố định">
                 <ProductListForUser />
             </Tab>
-            <Tab label="Thông tin thêm">
-                <Box sx={{ m: 2 }}>
-                    <Typography variant="body1">Đây là tab sử dụng MUI</Typography>
-                </Box>
-            </Tab>
+            
         </TabbedShowLayout>
     </Show>
 );

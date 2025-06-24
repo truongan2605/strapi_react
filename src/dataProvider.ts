@@ -94,11 +94,12 @@ const dataProvider: DataProvider = {
 
 
     getOne: async (resource, params) => {
-        const isVideo = resource === 'videos';
+        const shouldPopulate = ['videos', 'my-users'].includes(resource);
         const response = await fetch(
-            `${STRAPI_API_URL}/${resource}/${params.id}${isVideo ? '?populate=*' : ''}`,
+            `${STRAPI_API_URL}/${resource}/${params.id}${shouldPopulate ? '?populate=*' : ''}`,
             { headers: authHeader() }
         );
+
 
         if (!response.ok) {
             throw new Error(`Error fetching one: ${response.statusText}`);
@@ -320,7 +321,12 @@ const dataProvider: DataProvider = {
 
     getMany: async (resource, params) => {
         const query = new URLSearchParams();
-        query.set('filters[documentId][$in]', params.ids.join(','));
+
+        params.ids.forEach(id => {
+            query.append('filters[documentId][$in]', String(id));
+        });
+
+        query.append('populate', '*');
 
         const response = await fetch(
             `${STRAPI_API_URL}/${resource}?${query.toString()}`,
@@ -333,6 +339,7 @@ const dataProvider: DataProvider = {
 
         return parseStrapiList(response);
     },
+
 
     getManyReference: async () => ({ data: [], total: 0 }),
     updateMany: async () => ({ data: [] }),

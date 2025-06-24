@@ -5,7 +5,9 @@ import { Typography, Box } from '@mui/material';
 export default function VideoDetailPage() {
   const { id } = useParams();
   const { data, isLoading, error } = useGetOne('videos', { id });
+  console.log('Component render');
   console.log(data);
+
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error: {error.message}</p>;
   if (!data) return <p>Không tìm thấy video</p>;

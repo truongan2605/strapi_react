@@ -63,7 +63,6 @@ export default function VideoEditPage() {
   };
 
   const handleSave = () => {
-    console.log('Trim start:', region.start, 'Trim end:', region.end);
 
     update(
       'videos',
@@ -120,8 +119,10 @@ export default function VideoEditPage() {
           ws.on('ready', () => {
             const dur = ws.getDuration();
             setDuration(dur);
-            const start = data.trimStart || 0;
-            const end = data.trimEnd !== undefined && data.trimEnd !== 0 ? data.trimEnd : dur;
+            const start = typeof data.trimStart === 'number' ? data.trimStart : 0;
+
+            const end = typeof data.trimEnd === 'number' ? data.trimEnd : dur;
+
 
             setRegion({ start, end });
 

@@ -4,7 +4,7 @@ import { Box, styled } from '@mui/material';
 
 const StyledAppBar = styled(AppBar)({
     '& .RaAppBar-menuButton': {
-        display: 'true', 
+        display: 'none', 
     },
 });
 
