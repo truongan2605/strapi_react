@@ -9,7 +9,6 @@ const Profile = () => {
 
   if (isLoading) return <CircularProgress />;
   if (error || !identity) return <Alert severity="error">Không thể lấy thông tin người dùng</Alert>;
-  // console.log(identity)
   return (
     <Card sx={{ maxWidth: 600, m: '2rem auto' }}>
       <CardContent>

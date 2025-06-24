@@ -3,12 +3,12 @@ import { defaultLightTheme } from 'react-admin';
 import { createTheme } from '@mui/material/styles';
 
 export const lightTheme = createTheme({
-    ...defaultLightTheme, 
+    ...defaultLightTheme,
     palette: {
         ...defaultLightTheme.palette,
         mode: 'light',
         background: {
-            default: '#f5f5f5',
+            default: '#FFFFFF',
         },
         primary: {
             main: '#1976d2',
@@ -30,5 +30,27 @@ export const lightTheme = createTheme({
                 },
             },
         },
+        RaSidebar: {
+            styleOverrides: {
+                root: {
+                    width: '120px',
+                    minWidth: '120px',
+                    maxWidth: '120px',
+                    padding: 0,
+                    boxSizing: 'border-box',
+                },
+            },
+        },
+        RaMenu: {
+            styleOverrides: {
+                root: {
+                    width: '110px !important',
+                    maxWidth: '110px !important',
+                    minWidth: '110px !important',
+                },
+            },
+        },
+
+
     },
 });

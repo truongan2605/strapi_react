@@ -30,6 +30,7 @@ const CustomToolbar = (props: any) => {
     const notify = useNotify();
     const { permissions } = usePermissions();
     const canDelete = permissions?.['my-users']?.delete;
+    
     return (
         <Toolbar {...props}>
             <SaveButton />

@@ -6,6 +6,7 @@ const CustomLayout = (props: LayoutProps) => (
     <Layout {...props} menu={CustomMenu} appBar={CustomAppBar} sx={{
         '& .RaLayout-content': {
             paddingTop: '10px', 
+            marginLeft: '200px',
         },
     }} />
 );

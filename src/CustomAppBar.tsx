@@ -1,24 +1,29 @@
 // CustomAppBar.tsx
 import { AppBar, TitlePortal } from 'react-admin';
-import { Box } from '@mui/material';
+import { Box, styled } from '@mui/material';
 
+const StyledAppBar = styled(AppBar)({
+    '& .RaAppBar-menuButton': {
+        display: 'true', 
+    },
+});
 
 const CustomAppBar = (props: any) => {
     return (
-        <AppBar
+        <StyledAppBar
             {...props}
-            // enableColorOnDark
-            // position="static"
+            
             position="fixed"
             sx={{
                 backgroundColor: 'rgba(255, 255, 255, 0.85)', 
                 backdropFilter: 'blur(8px)',
-                boxShadow: 'none',
+                // boxShadow: 'none',
                 color: '#333 ',
                 paddingX: 2,
                 height: '64px',
                 justifyContent: 'center',
             }}
+            
         >
             <TitlePortal />
             <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
@@ -29,7 +34,7 @@ const CustomAppBar = (props: any) => {
 
                 
             </Box>
-        </AppBar>
+        </StyledAppBar>
     );
 };
 

@@ -7,6 +7,7 @@ import {
   email,
   number,
 } from 'react-admin';
+
 const validateZipCode = [
   number('Phải là số'),
   required('Bắt buộc'),
@@ -16,8 +17,10 @@ const validateZipCode = [
     value <= 10000 ? 'Mã zip không được nhỏ hơn 10000' : undefined,
  
 ];
+
 const validateRequired = required('Trường này là bắt buộc');
 const validateEmail = [required('Email là bắt buộc'), email('Email không hợp lệ')];
+
 const validateImageURL = (value: string) => {
   if (!value) return undefined; // không bắt buộc
   const pattern = /^https?:\/\/.*\.(jpg|jpeg|png|gif)(\?.*)?$/i;

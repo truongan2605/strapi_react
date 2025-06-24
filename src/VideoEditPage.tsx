@@ -146,6 +146,7 @@ export default function VideoEditPage() {
 
 
       <Typography>Trim:</Typography>
+      
       <Slider
         value={[region.start, region.end]}
         min={0}
@@ -163,6 +164,7 @@ export default function VideoEditPage() {
       <Button variant="contained" onClick={handleSave}>
         Lưu chỉnh sửa
       </Button>
+
     </Container>
   );
 }

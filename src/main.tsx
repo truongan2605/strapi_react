@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Admin, CustomRoutes, Resource } from 'react-admin';
 import { Route } from 'react-router-dom';
+
 import dataProvider from './dataProvider';
 import { UserList } from './UserList';
 import UserEdit from './UserEdit';
@@ -19,7 +20,6 @@ import VideoDetailPage from './VideoDetailPage';
 import VideoCreatePage from './VideoCreatePage';
 import authProvider from './authProvider';
 import { lightTheme } from './theme';
-
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -43,9 +43,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         edit={ProductEdit}
         create={ProductCreate}
       />
-
-
-
 
       <CustomRoutes>
         <Route path="/profile" element={<Profile />} />
